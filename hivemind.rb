@@ -24,14 +24,11 @@ def map_dig_basic_fort(x, y, z)
   map_dig_rect(x-1, y-2, z  , x+1, y-2, z  , :Channel)
 
   # Entryway
-  map_dig_rect(x-1, y-1, z-1, x+1, y+5, z-1)
+  map_dig_rect(x-1, y-1, z-1, x+1, y+10, z-1)
 
-  # Main Ramp
-  map_dig_rect(x-1, y+6 , z-1, x+1, y+6 , z-1, :Channel)
-  map_dig_rect(x-1, y+7 , z-2, x+1, y+7 , z-2, :Channel)
-  map_dig_rect(x-1, y+8 , z-3, x+1, y+8 , z-3, :Channel)
-  map_dig_rect(x-1, y+9 , z-4, x+1, y+9 , z-4, :Channel)
-  map_dig_rect(x-1, y+10, z-5, x+1, y+10, z-5, :Channel)
+  # Stairs
+  map_dig_rect(x-1, y+10, z-1, x+1, y+10, z-1, :DownStair)
+  map_dig_rect(x-1, y+10, z-6, x+1, y+10, z-2, :UpDownStair)
 
   # Main Hallway
   map_dig_rect(x-1, y-24, z-6, x+1, y-15, z-6)
@@ -68,7 +65,33 @@ def map_dig_basic_fort(x, y, z)
   map_dig_rect(x+3, y+5 , z-6, x+7, y+9 , z-6) # 5x5 Room
 end
 
+def designate_stockpile(x, y, z, w, h, type)
+  pile = df.building_alloc(:Stockpile)
+  df.building_position(pile, [x, y, z])
+  pile.room.extents = df.malloc(w * h)
+  pile.room.x = x
+  pile.room.y = y
+  pile.room.width = w
+  pile.room.height = h
+  top_left_tile = df.map_tile_at(x, y, z)
+  w.times { |x|
+    h.times { |y|
+      tile = top_left_tile.offset(x, y)
+      pile.room.extents[x + w * y] = (tile.shape_basic == :Floor ? 1 : 0)
+    }
+  }
+  pile.is_room = 1
+  df.building_construct_abstract(pile)
+  pile.settings.flags.wood = true
+  types = pile.settings.wood.mats
+  df.world.raws.plants.all.length.times { |i| types[i] = 1 }
+end
+
 leader = unit_find_leader
 x, y, z = leader.pos.x, leader.pos.y, leader.pos.z
 
+puts "Leader starting position was #{x}, #{y}, #{z}"
+x, y, z = 71, 70, 162
+
 map_dig_basic_fort(x, y, z)
+designate_stockpile(x-1, y-6, z, 3, 3, :wood)
